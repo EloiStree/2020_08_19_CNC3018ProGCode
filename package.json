@@ -1,0 +1,23 @@
+
+{                                                                                
+  "name": "be.eloistree.cnc3018pro",                              
+  "displayName": "CNC 3018 Pro G-Code",                        
+  "version": "0.0.1",                         
+  "unity": "2018.1",                             
+  "unityRelease": "",                             
+  "description": "Unity code to control your CNC 3018 Pro with GCode.",                         
+  "keywords": ["Script","Tool"],                       
+  "dependencies":{},     
+  "relatedPackages":{},     
+  "samples" : [],     
+  "author" : {
+"name":"",
+"mail":"",
+"url":""},     
+  "repository":{
+"type":"Git",
+"url":"https://github.com/EloiStree/2020_08_19_CNC3018ProGCode.git",
+"footprint":"",
+"revision":"23436431bb9f0a5b509e0158dd56a81bb9fea9ba"},     
+  "category": "Script"                   
+} 
