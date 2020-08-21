@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 public class UI_PadMoving : MonoBehaviour, IPointerDownHandler
 {
+    public GRBL_CommandToSendBuffer m_sender;
     public float m_widthInMm=150;
     public float m_depthInMm = 50;
     public MoveReference m_moveType;
@@ -57,29 +58,19 @@ public class UI_PadMoving : MonoBehaviour, IPointerDownHandler
     }
 
 
-    public void Stop() {
-        if (GCodeConnection.HasConnection())
-        {
-            GCodeConnection connection = GCodeConnection.GetConnection();
-            connection.Flush();
-            //connection.SendCommand(GCode3018Pro.Stop(GStopType.M30_ProgramEnd));
-        }
-    }
-
+    
     public void OnPointerDown(PointerEventData eventData)
     {
         Vector2 v2;
         bool hasHit;
         CheckIfPadWasTouch(eventData, out hasHit, out v2);
-        if (GCodeConnection.HasConnection()) {
-          GCodeConnection connection =  GCodeConnection.GetConnection();
-
+       
             foreach (string  cmd in GCode3018Pro.Group.ControlledMove(
                     m_moveType, new GVector3(v2.x*m_widthInMm, v2.y*m_depthInMm, 0), m_feedRate))
             {
-                connection.SendCommand(cmd);
+                m_sender.AddCommandToSend(cmd);
             }
-        }
+        
 
     }
 

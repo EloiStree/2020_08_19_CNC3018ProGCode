@@ -4,13 +4,15 @@ using UnityEngine;
 
 public class UI_SendRawCommand : MonoBehaviour
 {
-    public GCodeConnectionMono m_sender;
+
+    public GRBL_CommandToSendBuffer m_sender;
     public string m_textToSend="";
     public void Push() {
-        m_sender.SendRawCommand(m_textToSend);
+        m_sender.AddCommandToSend(m_textToSend);
     }
     public void SetCommandToSend(string commande) {
         m_textToSend = commande;
     }
+    
 
 }

@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class UI_RawImageToMove : MonoBehaviour
 {
 
+    public GRBL_CommandToSendBuffer m_sender;
     public Texture2D m_useImage;
     public Texture2D m_tempImage;
     public RawImage m_rawImage;
@@ -45,22 +46,14 @@ public class UI_RawImageToMove : MonoBehaviour
 
     public void StabEachPoints() {
         m_commandsToSend = GetCommands();
-        StartCoroutine(DirtyStabTest());
+        foreach (string cmd in m_commandsToSend)
+        {
+            m_sender.AddCommandToSend(cmd);
+        }
     }
 
     public float m_timePerCommands = 2;
-    private IEnumerator DirtyStabTest()
-    {
-        if (GCodeConnection.HasConnection())
-        {
-            GCodeConnection connection = GCodeConnection.GetConnection();
-            foreach (string cmd in m_commandsToSend)
-            {
-                connection.SendCommand(cmd);
-                yield return new WaitForSeconds(m_timePerCommands);
-            }
-        }
-    }
+   
 
     public string[] GetCommands() {
         List<string> cmds = new List<string>();

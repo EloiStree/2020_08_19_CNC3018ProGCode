@@ -6,7 +6,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class GCodeConnectionMono : MonoBehaviour
+public class GRBLConnectionMono : MonoBehaviour
 {
 
     public AutoStartFromUnity m_autoStart;
@@ -16,27 +16,28 @@ public class GCodeConnectionMono : MonoBehaviour
         [SerializeField] public string m_portname = "COM15";
         [SerializeField] public int m_baudrate = 115200;
     }
-    public GCodeConnection m_connection;
+    public GRBLConnection m_connection;
 
     [Header("Debug")]
-    public string m_char;
-    public string m_package;
     public string m_line;
-
     public string m_lastSent;
-    public List<string> m_lastSentHistory = new List<string>();
-    public List<string> m_recivedHistory = new List<string>();
-    public string m_charHistory;
-    //public UnityEvent m_previousMessageFail;
-    //public UnityEvent m_previousMessageReceived;
-    //public UnityEvent m_previousMessageSent;
-
+    public Queue<string> m_newLinesReceived = new Queue<string>();
+    public GRBLMessageLine m_onGrblLineReceived;
     private void Awake()
     {
         if (m_autoStart.m_useAtStart) {
             StartConnection(m_autoStart.m_portname, m_autoStart.m_baudrate);
         }
     }
+    private void Update()
+    {
+        if (m_newLinesReceived.Count > 0)
+        {
+            m_onGrblLineReceived.Invoke(m_newLinesReceived.Dequeue());
+        }
+       
+    }
+
 
     public void StartConnectionWithDefaultCOM()
     {
@@ -44,72 +45,45 @@ public class GCodeConnectionMono : MonoBehaviour
     }
     public void StartConnection(string portname, int baudrate) {
 
-        m_connection = new GCodeConnection(portname, baudrate);
-        GCodeConnection.SetConnection(m_connection);
-        m_connection.m_onReceivedChar += SetDebugChar;
-        m_connection.m_onPackageReceived += SetDebugPackage;
-        m_connection.m_onReceivedLineMessage+= SetDebugLine;
+        m_connection = new GRBLConnection(portname, baudrate);
+        GRBLConnection.SetConnection(m_connection);
         m_connection.m_onCommandSent += RecordForDebug ;
+        m_connection.m_onReceivedLineMessage += ReceivedLine;
+
+    }
+
+    private void ReceivedLine(string received)
+    {
+        m_newLinesReceived.Enqueue(received);
     }
 
     private void RecordForDebug(string command)
     {
         m_lastSent = command;
-        m_lastSentHistory.Insert(0, command);
-        while(m_lastSentHistory.Count > 20) 
-            m_lastSentHistory.RemoveAt(20);
     }
 
-    private void SetDebugLine(string  received)
-    {
-        if (received != null && received.Length > 0) {
-            m_line = received;
-            m_recivedHistory.Insert(0, m_line);
-            while (m_recivedHistory.Count > 20)
-                m_recivedHistory.RemoveAt(20);
-        }
-    }
-
-    private void SetDebugPackage(string received)
-    {
-        if(received!=null && received.Length>0)
-             m_package = received;
-    }
-
-    private void SetDebugChar(char received)
-    {
-        m_char = received.ToString();
-        m_charHistory += received;
-        //if (m_char == "e")
-        //    m_previousMessageFail.Invoke();
-        //if (m_char == "o")
-        //    m_previousMessageReceived.Invoke();
-    }
-
+   
+    
     private void OnDestroy()
     {
-        if (GCodeConnection.HasConnection()) {
-            GCodeConnection.GetConnection().Stop();
+        if (GRBLConnection.HasConnection()) {
+            GRBLConnection.GetConnection().Stop();
         }
-
-        m_connection.m_onReceivedChar -= SetDebugChar;
-        m_connection.m_onPackageReceived -= SetDebugPackage;
-        m_connection.m_onReceivedLineMessage -= SetDebugLine;
         m_connection.m_onCommandSent -= RecordForDebug;
+        m_connection.m_onReceivedLineMessage -= ReceivedLine;
     }
 
     public void SendRawCommand(string command) {
         m_connection.SendCommand(command);
-       // m_previousMessageSent.Invoke();
     }
 }
 
 [System.Serializable]
-public class GCodeConnection {
+public class GRBLConnection {
 
-     static GCodeConnection m_inScene;
+     static GRBLConnection m_inScene;
 
-    public static void SetConnection(GCodeConnection connection) {
+    public static void SetConnection(GRBLConnection connection) {
         m_inScene = connection;
     }
     internal static bool HasConnection()
@@ -117,7 +91,7 @@ public class GCodeConnection {
         return m_inScene != null;
     }
 
-    internal static GCodeConnection GetConnection()
+    internal static GRBLConnection GetConnection()
     {
         return m_inScene;
     }
@@ -140,7 +114,7 @@ public class GCodeConnection {
     public OnStringReturnReceived m_onPackageReceived;
     private bool m_requestToKillTheThread;
 
-    public GCodeConnection(string portname, int baudrate =115200)
+    public GRBLConnection(string portname, int baudrate =115200)
     {
         m_portName = portname;
         m_baudrate = baudrate;
@@ -246,6 +220,27 @@ public class GCodeConnection {
     public void Flush()
     {
         Refresh();
+    }
+
+    public void PauseDevice()
+    {
+        GRBLConnection.TryToSendCommand(GCode3018Pro.PauseDeviceJobs());
+    }
+    public void ResumeDevice()
+    {
+
+        GRBLConnection.TryToSendCommand(GCode3018Pro.ResumeDeviceJobs());
+    }
+   
+
+
+    public static void TryToSendCommand(string command)
+    {
+        if (HasConnection())
+        {
+            GRBLConnection connection = GetConnection();
+            connection.SendCommand(command);
+        }
     }
 }
 public enum ReturnReceived { Valide, Error}

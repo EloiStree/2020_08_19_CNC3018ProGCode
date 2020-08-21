@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class UI_Joystick : MonoBehaviour
 {
-
+    public GRBL_CommandToSendBuffer m_sender;
     public bool m_clockwise=true;
     public bool m_moveFast=true;
     public float m_speedRateInMm=500;
@@ -27,11 +27,7 @@ public class UI_Joystick : MonoBehaviour
     public void SendCommandIfConnection(string cmd)
     {
 
-        if (GCodeConnection.HasConnection())
-        {
-            GCodeConnection connection = GCodeConnection.GetConnection();
-            connection.SendCommand(cmd);
-        }
+        m_sender.AddCommandToSend(cmd);
     }
 
 
@@ -300,10 +296,14 @@ public class GCode3018Pro {
 
     public static string RotationSpeed(float rotationByMinute) { return "S" + rotationByMinute; }
     public static string RotationZero(float rotationByMinute) { return "S0" ; }
+
+ 
     public static string RotationMin(float rotationByMinute) { return "S1" ; }
+    
     public static string RotationMax(float rotationByMinute) { return "S1000"; }
 
-
+    
+   
     public static string StartCoolant() { return "M8"; }
     public static string StopCoolant() { return "M9"; }
     public static string StartVacuum() { return "M10"; }
@@ -365,6 +365,80 @@ public class GCode3018Pro {
         }
 
     }
+
+   
+
+    public static string PauseDeviceJobs()
+    {
+        return "!";
+    }
+
+    public static string ResumeDeviceJobs()
+    {
+        return "~";
+    }
+    public static string RequestStateInfo()
+    {
+        return "?";
+    }
+
+    public static string RequestSettingInfo()
+    {
+        return "$$";
+    }
+
+    public class GRBL {
+        //https://github.com/gnea/grbl/wiki/Grbl-v1.1-Commands
+        public static char SoftReset() { return (char)0x18; }
+        public static char JogCancel() { return (char)0x85; }
+        public static char ToggleSpindle() { return (char)0x9E; }
+        public static char ToggleFloodCoolant() { return (char)0xA0; }
+        public static char ToggleMistCoolant() { return (char)0xA1; }
+        public static string RunHomingCycle() { return "$H"; }
+        public static string ViewParserState() { return "$G"; }
+
+        public enum FeedOverride { Full, Add10Pct, Add1Pct, Remove10Pct, Remove1Pct }
+        public static char OverrideChange(FeedOverride change)
+        {
+            switch (change)
+            {
+                case FeedOverride.Full: return (char)0x90;
+                case FeedOverride.Add10Pct: return (char)0x91;
+                case FeedOverride.Add1Pct: return (char)0x93;
+                case FeedOverride.Remove10Pct: return (char)0x92;
+                case FeedOverride.Remove1Pct: return (char)0x94;
+                default: return (char)0x90;
+            }
+        }
+
+        public enum RapidOverride { Full, Set50Pct, Set25Pct }
+        public static char OverrideChange(RapidOverride change)
+        {
+            switch (change)
+            {
+                case RapidOverride.Full: return (char)0x95;
+                case RapidOverride.Set50Pct: return (char)0x96;
+                case RapidOverride.Set25Pct: return (char)0x97;
+                default: return (char)0x95;
+            }
+        }
+
+        public enum SpindleSpeedOverride { Full, Add10Pct, Add1Pct, Remove10Pct, Remove1Pct ,Stop}
+        public static char OverrideChange(SpindleSpeedOverride change)
+        {
+            switch (change)
+            {
+                case SpindleSpeedOverride.Full: return (char)0x99;
+                case SpindleSpeedOverride.Add10Pct: return (char)0x9A;
+                case SpindleSpeedOverride.Add1Pct: return (char)0x9C;
+                case SpindleSpeedOverride.Remove10Pct: return (char)0x9B;
+                case SpindleSpeedOverride.Remove1Pct: return (char)0x9D;
+                default: return (char)0x99;
+            }
+        }
+
+    }
+
 }
 
 public class GVector3{
